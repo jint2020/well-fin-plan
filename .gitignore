@@ -11,3 +11,14 @@ wheels/
 
 # Local git worktrees
 .worktrees/
+
+# Backend local tooling
+backend/.venv/
+backend/.pytest_cache/
+backend/dev.db
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# Frontend local tooling
+frontend/node_modules/
+frontend/dist/
