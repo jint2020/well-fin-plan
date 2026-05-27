@@ -55,23 +55,36 @@ const tableColumns = computed<DataTableColumns<Record<string, unknown>>>(() => [
   }
 ])
 
+function pickEditableFields(source: Record<string, unknown>) {
+  const payload: Record<string, unknown> = {}
+  for (const field of props.fields) {
+    if (Object.prototype.hasOwnProperty.call(source, field.key)) {
+      payload[field.key] = source[field.key]
+    }
+  }
+  return payload
+}
+
+function formValues(source: Record<string, unknown>) {
+  return pickEditableFields({ ...props.defaults, ...source })
+}
+
 function openCreate() {
   editingId.value = null
-  form.value = { ...props.defaults }
+  form.value = formValues(props.defaults)
   drawerVisible.value = true
 }
 
 function openEdit(row: Row) {
   editingId.value = row.id
-  form.value = { ...props.defaults, ...row }
+  form.value = formValues(row)
   drawerVisible.value = true
 }
 
 async function submit() {
   submitting.value = true
   try {
-    const payload = compactPayload({ ...form.value })
-    delete payload.id
+    const payload = compactPayload(pickEditableFields(form.value))
     if (editingId.value) {
       await props.onUpdate(editingId.value, payload)
     } else {

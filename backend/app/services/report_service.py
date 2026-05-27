@@ -98,9 +98,9 @@ def monthly_budget(db: Session, user_id: UUID, month: str) -> MonthlyBudgetRead:
             actual_flex += amount
 
     actual_total_income = salary_income + non_salary_income
-    budget_income = actual_total_income if actual_total_income > 0 else Decimal(settings.conservative_income_base)
     base = Decimal(settings.conservative_income_base)
-    extra_income = max(Decimal("0"), budget_income - base)
+    budget_income = base
+    extra_income = non_salary_income
 
     necessary_budget = base * Decimal(settings.necessity_ratio)
     base_saving_budget = base * Decimal(settings.saving_ratio)
