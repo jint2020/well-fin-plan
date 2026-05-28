@@ -11,9 +11,9 @@ const auth = useAuthStore()
 const isRegister = ref(false)
 const submitting = ref(false)
 const form = reactive({
-  email: 'alice@example.com',
-  password: 'SecurePass123!',
-  displayName: 'Alice'
+  email: '',
+  password: '',
+  displayName: ''
 })
 
 async function submit() {

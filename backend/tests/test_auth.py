@@ -1,8 +1,17 @@
 from sqlalchemy import select
 
+from app.core.config import get_settings
 from app.models.user import User
 
 from .conftest import auth_headers, register_user
+
+
+def setup_function():
+    get_settings.cache_clear()
+
+
+def teardown_function():
+    get_settings.cache_clear()
 
 
 def test_register_hashes_password_and_seeds_defaults(client, db_session):
@@ -40,3 +49,30 @@ def test_login_and_me_return_current_user(client):
 def test_finance_endpoint_requires_authentication(client):
     response = client.get("/api/v1/transactions")
     assert response.status_code == 401
+
+
+def test_auth_rejects_http_when_secure_transport_is_required(client, monkeypatch):
+    monkeypatch.setenv("REQUIRE_HTTPS", "true")
+    get_settings.cache_clear()
+
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "alice@example.com", "password": "SecurePass123!"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "secure transport required"
+
+
+def test_auth_accepts_trusted_forwarded_https_when_secure_transport_is_required(client, monkeypatch):
+    monkeypatch.setenv("REQUIRE_HTTPS", "true")
+    monkeypatch.setenv("TRUST_FORWARDED_PROTO", "true")
+    get_settings.cache_clear()
+
+    response = client.post(
+        "/api/v1/auth/register",
+        headers={"X-Forwarded-Proto": "https"},
+        json={"email": "secure@example.com", "password": "SecurePass123!", "display_name": "Secure"},
+    )
+
+    assert response.status_code == 201, response.text

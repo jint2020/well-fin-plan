@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, require_secure_transport
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
 from app.services.auth_service import authenticate_user, register_user
@@ -11,7 +11,12 @@ from app.services.auth_service import authenticate_user, register_user
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/auth/register",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_secure_transport)],
+)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
     try:
         return register_user(db, payload)
@@ -19,7 +24,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
         raise HTTPException(status_code=409, detail="email already registered") from exc
 
 
-@router.post("/auth/login", response_model=TokenResponse)
+@router.post("/auth/login", response_model=TokenResponse, dependencies=[Depends(require_secure_transport)])
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     token = authenticate_user(db, payload)
     if token is None:
