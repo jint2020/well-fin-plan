@@ -4,11 +4,12 @@ from collections.abc import Generator
 from uuid import UUID
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.security import decode_access_token
 from app.db.session import get_session
 from app.models.user import User
@@ -18,6 +19,18 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 def get_db() -> Generator[Session, None, None]:
     yield from get_session()
+
+
+def require_secure_transport(request: Request) -> None:
+    settings = get_settings()
+    if not settings.require_https:
+        return
+    if request.url.scheme == "https":
+        return
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",", 1)[0].strip().lower()
+    if settings.trust_forwarded_proto and forwarded_proto == "https":
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="secure transport required")
 
 
 def get_current_user(

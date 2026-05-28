@@ -1,3 +1,5 @@
+import axios, { AxiosError } from 'axios'
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? '/api/v1'
 
 export function getToken() {
@@ -12,21 +14,39 @@ export function setToken(token: string | null) {
   }
 }
 
-export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+export const http = axios.create({
+  baseURL: API_BASE,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
+http.interceptors.request.use((config) => {
   const token = getToken()
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+http.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<{ detail?: string }>) => {
+    if (error.response?.status === 401) {
+      setToken(null)
     }
+    const detail = error.response?.data?.detail
+    return Promise.reject(new Error(detail || error.message || '请求失败'))
+  }
+)
+
+export async function api<T>(path: string): Promise<T>
+export async function api<T>(path: string, options: { method?: string; body?: string }): Promise<T>
+export async function api<T>(path: string, options: { method?: string; body?: string } = {}): Promise<T> {
+  const response = await http.request<T>({
+    url: path,
+    method: options.method || 'GET',
+    data: options.body ? JSON.parse(options.body) : undefined
   })
-  if (!response.ok) {
-    throw new Error(await response.text())
-  }
-  if (response.status === 204) {
-    return undefined as T
-  }
-  return response.json() as Promise<T>
+  return response.data
 }

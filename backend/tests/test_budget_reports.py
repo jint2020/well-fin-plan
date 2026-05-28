@@ -39,12 +39,31 @@ def test_extra_income_allocation_does_not_raise_base_daily_budget(client):
     assert Decimal(data["necessary_budget"]) == Decimal("3500.00")
     assert Decimal(data["base_saving_budget"]) == Decimal("2100.00")
     assert Decimal(data["base_flex_budget"]) == Decimal("1400.00")
-    assert Decimal(data["extra_income"]) == Decimal("2100.00")
-    assert Decimal(data["extra_to_saving_debt"]) == Decimal("1470.00")
-    assert Decimal(data["extra_to_reserve"]) == Decimal("420.00")
-    assert Decimal(data["extra_to_flex"]) == Decimal("210.00")
-    assert Decimal(data["recommended_saving_debt"]) == Decimal("3570.00")
-    assert Decimal(data["recommended_flex"]) == Decimal("1610.00")
+    assert Decimal(data["extra_income"]) == Decimal("1300.00")
+    assert Decimal(data["extra_to_saving_debt"]) == Decimal("910.00")
+    assert Decimal(data["extra_to_reserve"]) == Decimal("260.00")
+    assert Decimal(data["extra_to_flex"]) == Decimal("130.00")
+    assert Decimal(data["recommended_saving_debt"]) == Decimal("3010.00")
+    assert Decimal(data["recommended_flex"]) == Decimal("1530.00")
+
+
+def test_salary_above_conservative_base_is_not_extra_income(client):
+    headers = auth_headers(register_user(client, "alice@example.com"))
+
+    _post_transaction(client, headers, "工资卡", "工资", "2026-01-05", "8136")
+
+    response = client.get("/api/v1/reports/monthly-budget?month=2026-01", headers=headers)
+    assert response.status_code == 200, response.text
+    data = response.json()
+
+    assert Decimal(data["salary_income"]) == Decimal("8136.00")
+    assert Decimal(data["non_salary_income"]) == Decimal("0.00")
+    assert Decimal(data["actual_total_income"]) == Decimal("8136.00")
+    assert Decimal(data["budget_income"]) == Decimal("7000.00")
+    assert Decimal(data["extra_income"]) == Decimal("0.00")
+    assert Decimal(data["extra_to_saving_debt"]) == Decimal("0.00")
+    assert Decimal(data["extra_to_reserve"]) == Decimal("0.00")
+    assert Decimal(data["extra_to_flex"]) == Decimal("0.00")
 
 
 def test_monthly_report_only_uses_current_user_data(client):

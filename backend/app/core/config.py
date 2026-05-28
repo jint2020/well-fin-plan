@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "dev-secret-change-me-with-at-least-32-bytes"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    require_https: bool = False
+    trust_forwarded_proto: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

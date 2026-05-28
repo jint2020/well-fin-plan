@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
@@ -11,18 +11,23 @@ from app.models.user import User
 from app.schemas.finance import (
     AssetAllocationCreate,
     AssetAllocationRead,
+    AssetAllocationSummaryRead,
     AssetAllocationUpdate,
     DebtCreate,
+    DebtProgressRead,
     DebtRead,
     DebtUpdate,
     EmergencyFundPlanCreate,
+    EmergencyFundProgressRead,
     EmergencyFundPlanRead,
     EmergencyFundPlanUpdate,
     FinancialGoalCreate,
+    FinancialGoalProgressRead,
     FinancialGoalRead,
     FinancialGoalUpdate,
 )
 from app.services.finance_service import create_resource, delete_resource, get_resource, list_resources, update_resource
+from app.services.report_service import asset_allocation_summary, debt_progress, emergency_fund_progress, goal_progress
 
 router = APIRouter(tags=["finance-resources"])
 
@@ -37,8 +42,22 @@ def create_emergency_plan(
 
 
 @router.get("/emergency-fund/plans", response_model=list[EmergencyFundPlanRead])
-def list_emergency_plans(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return list_resources(db, EmergencyFundPlan, current_user.id)
+def list_emergency_plans(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return list_resources(db, EmergencyFundPlan, current_user.id, page=page, page_size=page_size)
+
+
+@router.get("/emergency-fund/progress", response_model=EmergencyFundProgressRead)
+def emergency_progress(
+    month: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return emergency_fund_progress(db, current_user.id, month)
 
 
 @router.get("/emergency-fund/plans/{resource_id}", response_model=EmergencyFundPlanRead)
@@ -75,8 +94,22 @@ def create_debt(payload: DebtCreate, db: Session = Depends(get_db), current_user
 
 
 @router.get("/debts", response_model=list[DebtRead])
-def list_debts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return list_resources(db, Debt, current_user.id)
+def list_debts(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return list_resources(db, Debt, current_user.id, page=page, page_size=page_size)
+
+
+@router.get("/debts/progress", response_model=DebtProgressRead)
+def debt_repayment_progress(
+    month: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return debt_progress(db, current_user.id, month)
 
 
 @router.get("/debts/{resource_id}", response_model=DebtRead)
@@ -109,8 +142,18 @@ def create_asset(
 
 
 @router.get("/asset-allocations", response_model=list[AssetAllocationRead])
-def list_assets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return list_resources(db, AssetAllocation, current_user.id)
+def list_assets(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return list_resources(db, AssetAllocation, current_user.id, page=page, page_size=page_size)
+
+
+@router.get("/asset-allocations/summary", response_model=AssetAllocationSummaryRead)
+def asset_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return asset_allocation_summary(db, current_user.id)
 
 
 @router.get("/asset-allocations/{resource_id}", response_model=AssetAllocationRead)
@@ -143,8 +186,18 @@ def create_goal(
 
 
 @router.get("/goals", response_model=list[FinancialGoalRead])
-def list_goals(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return list_resources(db, FinancialGoal, current_user.id)
+def list_goals(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return list_resources(db, FinancialGoal, current_user.id, page=page, page_size=page_size)
+
+
+@router.get("/goals/progress", response_model=FinancialGoalProgressRead)
+def goals_progress(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return goal_progress(db, current_user.id)
 
 
 @router.get("/goals/{resource_id}", response_model=FinancialGoalRead)

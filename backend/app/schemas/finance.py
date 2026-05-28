@@ -48,6 +48,21 @@ class SettingsRead(BaseModel):
     plan_year: int
 
 
+class SettingsCreate(StrictFinanceModel):
+    salary_min: Decimal = Field(default=Decimal("7000.00"), ge=0)
+    salary_max: Decimal = Field(default=Decimal("8500.00"), ge=0)
+    conservative_income_base: Decimal = Field(default=Decimal("7000.00"), ge=0)
+    necessity_ratio: Decimal = Field(default=Decimal("0.5000"), ge=0)
+    saving_ratio: Decimal = Field(default=Decimal("0.3000"), ge=0)
+    flex_ratio: Decimal = Field(default=Decimal("0.2000"), ge=0)
+    extra_saving_ratio: Decimal = Field(default=Decimal("0.7000"), ge=0)
+    extra_reserve_ratio: Decimal = Field(default=Decimal("0.2000"), ge=0)
+    extra_flex_ratio: Decimal = Field(default=Decimal("0.1000"), ge=0)
+    emergency_months: int = Field(default=3, ge=1)
+    monthly_necessity_amount: Decimal = Field(default=Decimal("4000.00"), ge=0)
+    plan_year: int = Field(default=2026, ge=2000)
+
+
 class SettingsUpdate(StrictFinanceModel):
     salary_min: Decimal | None = Field(default=None, ge=0)
     salary_max: Decimal | None = Field(default=None, ge=0)
@@ -99,6 +114,21 @@ class TransactionRead(BaseModel):
     description: str | None
     amount: Decimal
     note: str | None
+
+
+class MonthlyIncomeSummaryRead(BaseModel):
+    month: date
+    salary_income: Decimal
+    non_salary_income: Decimal
+    total_income: Decimal
+    by_category: dict[str, Decimal]
+
+
+class MonthlyExpenseSummaryRead(BaseModel):
+    month: date
+    total_expense: Decimal
+    by_type: dict[str, Decimal]
+    by_category: dict[str, Decimal]
 
 
 class DebtCreate(StrictFinanceModel):
@@ -158,6 +188,30 @@ class DebtRead(BaseModel):
     note: str | None
 
 
+class EmergencyFundProgressRead(BaseModel):
+    month: date
+    target_amount: Decimal
+    planned_amount: Decimal
+    actual_month_deposit: Decimal
+    current_amount: Decimal
+    progress_rate: Decimal
+    remaining_amount: Decimal
+
+
+class DebtProgressItemRead(DebtRead):
+    monthly_payment_plan: Decimal
+    monthly_payment_progress_rate: Decimal | None
+
+
+class DebtProgressRead(BaseModel):
+    month: date
+    total_debt_balance: Decimal
+    planned_monthly_payment: Decimal
+    actual_debt_payment: Decimal
+    repayment_completion_rate: Decimal
+    items: list[DebtProgressItemRead]
+
+
 class AssetAllocationCreate(StrictFinanceModel):
     asset_class: str
     current_amount: Decimal = Field(ge=0)
@@ -183,6 +237,17 @@ class AssetAllocationRead(BaseModel):
     target_ratio: Decimal
     risk_level: str | None
     note: str | None
+
+
+class AssetAllocationSummaryItemRead(AssetAllocationRead):
+    current_ratio: Decimal
+    target_amount: Decimal
+    gap_amount: Decimal
+
+
+class AssetAllocationSummaryRead(BaseModel):
+    total_amount: Decimal
+    items: list[AssetAllocationSummaryItemRead]
 
 
 class FinancialGoalCreate(StrictFinanceModel):
@@ -218,6 +283,18 @@ class FinancialGoalRead(BaseModel):
     status: str
 
 
+class FinancialGoalProgressItemRead(FinancialGoalRead):
+    progress_rate: Decimal
+    remaining_amount: Decimal
+
+
+class FinancialGoalProgressRead(BaseModel):
+    total_target_amount: Decimal
+    total_current_amount: Decimal
+    overall_progress_rate: Decimal
+    items: list[FinancialGoalProgressItemRead]
+
+
 class MonthlyBudgetRead(BaseModel):
     month: date
     salary_income: Decimal
@@ -251,6 +328,12 @@ class IncomePlanRead(BaseModel):
 
 class DashboardRead(BaseModel):
     monthly_budget: MonthlyBudgetRead
+    income_summary: MonthlyIncomeSummaryRead
+    expense_summary: MonthlyExpenseSummaryRead
+    emergency_fund_progress: EmergencyFundProgressRead
+    debt_progress: DebtProgressRead
+    asset_allocation_summary: AssetAllocationSummaryRead
+    goal_progress: FinancialGoalProgressRead
     net_assets: Decimal
     debt_balance: Decimal
     emergency_fund_balance: Decimal
